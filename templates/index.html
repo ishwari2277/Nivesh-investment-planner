@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Prediction Tool</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <!-- Chart.js for Pie Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(to right, #f0f8ff, #dcefff); /* Light Blue-White Gradient */
+            color: #003366; /* Dark Blue Text */
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+            transition: transform 0.3s ease-in-out;
+        }
+        .container:hover {
+            transform: scale(1.02);
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #0056b3; /* Darker Blue */
+        }
+        .form-control, .btn {
+            border-radius: 10px;
+        }
+        .btn {
+            background: #007bff;
+            border: none;
+            font-weight: bold;
+            transition: 0.3s ease-in-out;
+            color: white;
+        }
+        .btn:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+        .result-box {
+            background: #e3f2fd; /* Light Blue */
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-in-out;
+        }
+        .result-box.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Investment Prediction Tool</h1>
+        <form id="prediction-form" onsubmit="return submitForm(event)">
+            <div class="form-group">
+                <label for="investment">Investment Amount (₹):</label>
+                <input type="number" id="investment" name="investment" min="1" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="risk-tolerance">Risk Tolerance:</label>
+                <select id="risk-tolerance" name="risk-tolerance" required class="form-control">
+                    <option value="aggressive">Aggressive</option>
+                    <option value="balanced">Balanced</option>
+                    <option value="conservative">Conservative</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-block">Predict</button>
+        </form>
+
+        <div id="results" class="result-box" style="display: none;">
+            <h3>Prediction Result</h3>
+            <p><strong>Investment Type:</strong> <span id="investment-type"></span></p>
+            <p><strong>Initial Investment:</strong> ₹<span id="initial-investment"></span></p>
+            <p><strong>Stock Investment:</strong> ₹<span id="stock-investment"></span> → ₹<span id="expected-stock-value"></span> (After 5 years)</p>
+            <p><strong>Gold Investment:</strong> ₹<span id="gold-investment"></span> → ₹<span id="expected-gold-value"></span> (After 5 years)</p>
+            <p><strong>Expected Total Value:</strong> ₹<span id="expected-total-value"></span></p>
+
+            <!-- Pie Chart -->
+            <canvas id="investmentChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        async function submitForm(event) {
+            event.preventDefault();
+            const investment = document.getElementById('investment').value;
+            const riskTolerance = document.getElementById('risk-tolerance').value;
+
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `investment=${investment}&risk_tolerance=${riskTolerance}`
+            });
+
+            const result = await response.json();
+
+            // Display results
+            document.getElementById('investment-type').textContent = result.investment_type;
+            document.getElementById('initial-investment').textContent = result.initial_investment;
+            document.getElementById('stock-investment').textContent = result.stock_investment;
+            document.getElementById('expected-stock-value').textContent = result.expected_stock_value;
+            document.getElementById('gold-investment').textContent = result.gold_investment;
+            document.getElementById('expected-gold-value').textContent = result.expected_gold_value;
+            document.getElementById('expected-total-value').textContent = result.expected_total_value;
+
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.style.display = "block";
+            resultsContainer.classList.add("show"); // Trigger animation
+
+            // Update Pie Chart
+            createPieChart(result.stock_investment, result.gold_investment);
+        }
+
+        function createPieChart(stockInvestment, goldInvestment) {
+            const ctx = document.getElementById('investmentChart').getContext('2d');
+            if (window.investmentChart) {
+                window.investmentChart.destroy(); // Destroy previous chart instance
+            }
+            window.investmentChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Stock Investment', 'Gold Investment'],
+                    datasets: [{
+                        data: [stockInvestment, goldInvestment],
+                        backgroundColor: ['#007bff', '#ffcc00'], /* Blue and Gold */
+                        hoverBackgroundColor: ['#0056b3', '#d4a100']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
